@@ -57,7 +57,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",  
+    "https://wm-siteweb.vercel.app",
 ]
 
 ROOT_URLCONF = 'ecommerce.urls'

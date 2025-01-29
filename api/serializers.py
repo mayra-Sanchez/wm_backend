@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Producto, Categoria
+from .models import Producto, Categoria, Carrito, ProductoEnCarrito
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 Usuario = get_user_model()
 
@@ -14,7 +15,8 @@ class CategoriaSerializer(serializers.ModelSerializer):
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
-        fields = '__all__'
+        fields = ['id', 'nombre', 'descripcion', 'precio', 'imagen', 'stock']# Asegura incluir 'id'
+
     
     def create(self, validated_data):
         imagen = validated_data.pop('imagen', None)  # Esto garantiza que no se pase 'imagen' a create().
@@ -32,6 +34,11 @@ class ProductoSerializer(serializers.ModelSerializer):
         if not value.name.endswith(('.png', '.jpg', '.jpeg')):
             raise ValidationError('Solo se permiten imágenes PNG, JPG o JPEG.')
         return value
+    
+    def get_imagen(self, obj):
+        if obj.imagen:
+            return settings.MEDIA_URL + str(obj.imagen)
+        return None
 
 
 
@@ -70,4 +77,23 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class ProductoEnCarritoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer()  # Serializamos la relación de Producto
 
+    class Meta:
+        model = ProductoEnCarrito
+        fields = ['producto', 'cantidad']
+
+# class CarritoSerializer(serializers.ModelSerializer):
+#     productos_en_carrito = ProductoEnCarritoSerializer(source='productosen_carrito', many=True)  # Usamos el serializer de ProductoEnCarrito
+
+#     class Meta:
+#         model = Carrito
+#         fields = ['id', 'productos_en_carrito']
+
+class CarritoSerializer(serializers.ModelSerializer):
+    productos_en_carrito = ProductoEnCarritoSerializer(many=True)  # Asegúrate de que se serialicen los productos en carrito
+
+    class Meta:
+        model = Carrito
+        fields = ['usuario', 'productos_en_carrito']

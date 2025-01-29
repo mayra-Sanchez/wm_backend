@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermission
 from .models import ProductoEnCarrito, Producto, Carrito, Usuario, Categoria
-from .serializers import ProductoSerializer, RegistroUsuarioSerializer, CategoriaSerializer
+from .serializers import ProductoSerializer, CarritoSerializer, RegistroUsuarioSerializer, CategoriaSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -20,11 +20,14 @@ from django.shortcuts import get_object_or_404
 
 Usuario = get_user_model()
 
+# CARRITO #
+
+# Vista para agregar al carrito
 # Vista para agregar al carrito
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def agregar_al_carrito(request, product_id):
     try:
-        # Obtener el producto
         producto = Producto.objects.get(id=product_id)
         
         # Obtener o crear el carrito del usuario
@@ -43,26 +46,82 @@ def agregar_al_carrito(request, product_id):
         return Response({"message": "Producto no encontrado"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-@login_required
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def ver_carrito(request):
-    carrito = Carrito.objects.filter(usuario=request.user).first()
-    if carrito:
-        productos = carrito.productos.all()
-        total = sum([producto.total_precio() for producto in productos])
-        return render(request, 'carrito.html', {'productos': productos, 'total': total})
-    return render(request, 'carrito.html', {'productos': [], 'total': 0})
+    try:
+        # Obtener el carrito del usuario
+        carrito = Carrito.objects.get(usuario=request.user)
+        
+        # Obtener todos los productos en el carrito
+        productos_en_carrito = ProductoEnCarrito.objects.filter(carrito=carrito)
+
+        # Preparar la respuesta
+        productos = []
+        total = 0
+        for producto_en_carrito in productos_en_carrito:
+            total += producto_en_carrito.total_precio()
+            productos.append({
+                'id': producto_en_carrito.producto.id,  # Incluir el id
+                'producto': producto_en_carrito.producto.nombre,
+                'precio': producto_en_carrito.producto.precio,
+                'cantidad': producto_en_carrito.cantidad,
+                'total_precio': producto_en_carrito.total_precio()
+            })
+
+        return Response({'productos': productos, 'total': total})
+
+    except Carrito.DoesNotExist:
+        return Response({'error': 'Carrito no encontrado'}, status=404)
+
+# Vista para actualizar la cantidad de un producto en el carrito
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def actualizar_cantidad_producto(request, product_id):
+    try:
+        carrito = Carrito.objects.get(usuario=request.user)
+        producto_en_carrito = ProductoEnCarrito.objects.get(carrito=carrito, producto__id=product_id)
+        
+        # Obtener la nueva cantidad desde el cuerpo de la solicitud
+        cantidad = request.data.get('cantidad')
+        if cantidad is None or cantidad <= 0:
+            return Response({'message': 'Cantidad inválida'}, status=status.HTTP_400_BAD_REQUEST)
+
+        producto_en_carrito.cantidad = cantidad
+        producto_en_carrito.save()
+        
+        return Response({'message': 'Cantidad del producto actualizada con éxito'}, status=status.HTTP_200_OK)
+
+    except Carrito.DoesNotExist:
+        return Response({'message': 'Carrito no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except ProductoEnCarrito.DoesNotExist:
+        return Response({'message': 'Producto no encontrado en el carrito'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # Vista para eliminar un producto del carrito
-@login_required
-def eliminar_del_carrito(request, producto_id):
-    carrito = Carrito.objects.filter(usuario=request.user).first()
-    if carrito:
-        producto_en_carrito = carrito.productos.filter(id=producto_id).first()
-        if producto_en_carrito:
-            carrito.productos.remove(producto_en_carrito)
-            return JsonResponse({'message': 'Producto eliminado del carrito'}, status=status.HTTP_200_OK)
-    return JsonResponse({'error': 'Producto no encontrado en el carrito'}, status=status.HTTP_404_NOT_FOUND)
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def eliminar_del_carrito(request, product_id):
+    try:
+        carrito = Carrito.objects.get(usuario=request.user)
+        productos_en_carrito = ProductoEnCarrito.objects.filter(carrito=carrito, producto__id=product_id)
 
+        if productos_en_carrito.exists():
+            # Eliminar todos los productos que coinciden (si es lo que deseas)
+            productos_en_carrito.delete()
+
+        return Response({'message': 'Producto eliminado del carrito'}, status=status.HTTP_200_OK)
+
+    except Carrito.DoesNotExist:
+        return Response({'message': 'Carrito no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except ProductoEnCarrito.DoesNotExist:
+        return Response({'message': 'Producto no encontrado en el carrito'}, status=status.HTTP_404_NOT_FOUND)
+
+# TOKEN #
+    
 # Vista para obtener los tokens del usuario
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -77,18 +136,20 @@ class AgregarAlCarritoView(APIView):
     def post(self, request, product_id):
         try:
             user = request.user
-            product = get_object_or_404(Producto, id=product_id)  # Get the product by ID
+            product = get_object_or_404(Producto, id=product_id)
 
             if product.stock <= 0:
                 return Response({'message': 'Producto fuera de stock'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if the product is already in the user's cart
-            cart_item, created = Carrito.objects.get_or_create(user=user, product=product)
+            # Obtener o crear el carrito del usuario
+            carrito, created = Carrito.objects.get_or_create(usuario=user)
+
+            # Agregar el producto al carrito (creando o actualizando la cantidad)
+            producto_en_carrito, created = ProductoEnCarrito.objects.get_or_create(carrito=carrito, producto=product)
 
             if not created:
-                # Increment quantity if the item is already in the cart
-                cart_item.quantity += 1
-                cart_item.save()
+                producto_en_carrito.cantidad += 1  # Si el producto ya está en el carrito, incrementa la cantidad
+                producto_en_carrito.save()
 
             return Response({'message': 'Producto agregado al carrito'}, status=status.HTTP_200_OK)
 

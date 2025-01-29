@@ -5,7 +5,7 @@ from .views import RegistroUsuarioView, ProductoViewSet, LogoutView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import  TokenRefreshView
 from . import views
-from .views import CustomTokenObtainPairView, ver_carrito, eliminar_del_carrito, CategoriaListView,EnviarCarritoView, UsuarioViewSet,CategoriaViewSet, UsuarioDetalleView
+from .views import CustomTokenObtainPairView, ver_carrito, eliminar_del_carrito , CategoriaListView,EnviarCarritoView, UsuarioViewSet,CategoriaViewSet, UsuarioDetalleView
 
 router = DefaultRouter()
 router.register('productos', ProductoViewSet)
@@ -28,8 +28,9 @@ urlpatterns = [
     path('usuario_detalle/', UsuarioDetalleView.as_view(), name='usuario-detalle'),
     path('enviar-carrito/', EnviarCarritoView.as_view(), name='enviar_carrito'),
     path('agregar_al_carrito/<int:product_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
-    path('ver-carrito/', ver_carrito, name='ver_carrito'),
-    path('eliminar-del-carrito/<int:producto_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),
+    path('ver-carrito/', views.ver_carrito, name='ver_carrito'),
+    path('eliminar_del_carrito/<int:product_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),
+    path('actualizar-cantidad-producto/<int:product_id>/', views.actualizar_cantidad_producto, name='actualizar_cantidad_producto'),
 ]
 
 if settings.DEBUG:

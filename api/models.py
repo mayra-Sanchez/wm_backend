@@ -3,6 +3,22 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils.text import slugify
 from django.conf import settings
 
+# Modelo ProductoEnCarrito (debe ser definido antes de Carrito)
+class ProductoEnCarrito(models.Model):
+    id = models.AutoField(primary_key=True)
+    carrito = models.ForeignKey('Carrito', on_delete=models.CASCADE)  # Referencia al Carrito
+    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)  # Referencia al Producto
+    cantidad = models.PositiveIntegerField()
+    
+    class Meta:
+        unique_together = ('carrito', 'producto')
+
+    def __str__(self):
+        return f"{self.producto.nombre} - {self.cantidad} unidades"
+
+    def total_precio(self):
+        return self.producto.precio * self.cantidad
+
 # Modelo Categoría
 class Categoria(models.Model):
     CATEGORIA_CHOICES = [
@@ -24,6 +40,7 @@ class Categoria(models.Model):
 
 # Modelo Producto
 class Producto(models.Model):
+    id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField()
     precio = models.DecimalField(max_digits=10, decimal_places=3)
@@ -33,6 +50,10 @@ class Producto(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, default=1)
 
+    def total_precio(self):
+        # Suponiendo que la cantidad es 1 por defecto
+        return self.precio
+    
     def __str__(self):
         return self.nombre
 
@@ -58,7 +79,6 @@ class UsuarioManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class Usuario(AbstractBaseUser):
-    # Opciones para el campo 'rol'
     CLIENTE = 'client'
     ADMINISTRADOR = 'admin'
     
@@ -83,20 +103,12 @@ class Usuario(AbstractBaseUser):
         return self.email
     
 class Carrito(models.Model):
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    productos = models.ManyToManyField('Producto', through='ProductoEnCarrito')
+    # usuario = models.ForeignKey('api.Usuario', on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    productos_en_carrito = models.ManyToManyField(Producto, through='ProductoEnCarrito')
 
-
+    @property
+    def productos(self):
+        return ProductoEnCarrito.objects.filter(carrito=self)
     def __str__(self):
         return f"Carrito de {self.usuario.email} - {self.fecha_creacion}"
-
-class ProductoEnCarrito(models.Model):
-    carrito = models.ForeignKey('Carrito', on_delete=models.CASCADE)
-    producto = models.ForeignKey('Producto', on_delete=models.CASCADE)
-    cantidad = models.IntegerField(default=1)
-    
-    def __str__(self):
-        return f"{self.producto.nombre} - {self.cantidad} unidades"
-    
-    def total_precio(self):
-        return self.cantidad * self.producto.precio
