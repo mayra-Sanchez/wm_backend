@@ -103,12 +103,37 @@ class Usuario(AbstractBaseUser):
         return self.email
     
 class Carrito(models.Model):
-    # usuario = models.ForeignKey('api.Usuario', on_delete=models.CASCADE)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     productos_en_carrito = models.ManyToManyField(Producto, through='ProductoEnCarrito')
 
     @property
-    def productos(self):
-        return ProductoEnCarrito.objects.filter(carrito=self)
+    def total(self):
+        return sum([producto.total_precio() for producto in self.productos_en_carrito.all()])
+
     def __str__(self):
-        return f"Carrito de {self.usuario.email} - {self.fecha_creacion}"
+        return f"Carrito de {self.usuario.email}"
+    
+class Compra(models.Model):
+    cliente = models.ForeignKey(Usuario, on_delete=models.CASCADE, null=True, blank=True)
+    productos_lista = models.ManyToManyField(Producto, through='ProductoComprado')
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Calcular el total antes de guardar
+        if not self.total:
+            self.total = sum([producto.precio * producto.cantidad for producto in self.productos_lista.all()])
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Compra {self.id} - {self.total} COP"
+
+class ProductoComprado(models.Model):
+    compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='productos_comprados')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    nombre = models.CharField(max_length=255)
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    cantidad = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.nombre} x{self.cantidad}"

@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Producto, Categoria, Carrito, ProductoEnCarrito
+from .models import Categoria, Carrito, ProductoEnCarrito, Compra, Producto, ProductoComprado
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
@@ -40,7 +40,10 @@ class ProductoSerializer(serializers.ModelSerializer):
             return settings.MEDIA_URL + str(obj.imagen)
         return None
 
-
+class CompraSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Compra
+        fields = ['producto', 'cantidad', 'fecha', 'total']
 
 # Serializer para crear usuarios (con campos básicos)
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -84,16 +87,32 @@ class ProductoEnCarritoSerializer(serializers.ModelSerializer):
         model = ProductoEnCarrito
         fields = ['producto', 'cantidad']
 
-# class CarritoSerializer(serializers.ModelSerializer):
-#     productos_en_carrito = ProductoEnCarritoSerializer(source='productosen_carrito', many=True)  # Usamos el serializer de ProductoEnCarrito
-
-#     class Meta:
-#         model = Carrito
-#         fields = ['id', 'productos_en_carrito']
+class ProductoCompradoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductoComprado
+        fields = ['producto', 'nombre', 'precio', 'cantidad']
 
 class CarritoSerializer(serializers.ModelSerializer):
-    productos_en_carrito = ProductoEnCarritoSerializer(many=True)  # Asegúrate de que se serialicen los productos en carrito
+    productos_en_carrito = ProductoEnCarritoSerializer(many=True)
 
     class Meta:
         model = Carrito
-        fields = ['usuario', 'productos_en_carrito']
+        fields = ['usuario', 'productos_en_carrito', 'total']
+
+class CompraSerializer(serializers.ModelSerializer):
+    productos_lista = ProductoCompradoSerializer(many=True)
+
+    class Meta:
+        model = Compra
+        fields = ['cliente', 'productos_lista', 'total', 'fecha']
+    
+    def create(self, validated_data):
+        productos_data = validated_data.pop('productos_lista')
+        compra = Compra.objects.create(**validated_data)
+        total = 0  # Acumulamos el total aquí
+        for producto_data in productos_data:
+            producto_comprado = ProductoComprado.objects.create(compra=compra, **producto_data)
+            total += producto_comprado.precio * producto_comprado.cantidad
+        compra.total = total  # Asignamos el total calculado
+        compra.save()
+        return compra

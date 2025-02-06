@@ -28,7 +28,8 @@ SECRET_KEY = 'django-insecure-#ru9*6&lii_2_+7of!h74oi9+bp2r-$x)i7!)-3+i#9)dchh)q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ["MayraSanchez.pythonanywhere.com"]
+
 
 
 # Application definition
@@ -41,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'rest_framework',
+    'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 ]
@@ -57,6 +60,7 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",  
     "https://wm-siteweb.vercel.app",
 ]
 

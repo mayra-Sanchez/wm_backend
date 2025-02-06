@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermission
-from .models import ProductoEnCarrito, Producto, Carrito, Usuario, Categoria
-from .serializers import ProductoSerializer, CarritoSerializer, RegistroUsuarioSerializer, CategoriaSerializer
+from .models import ProductoEnCarrito, Producto,Compra, Carrito, Usuario, Categoria
+from .serializers import ProductoSerializer, CarritoSerializer, RegistroUsuarioSerializer, CategoriaSerializer, CompraSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -283,22 +283,89 @@ class EnviarCarritoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # Buscar el carrito del usuario autenticado
         carrito = Carrito.objects.filter(usuario=request.user).first()
         if not carrito:
             return JsonResponse({"error": "No tienes productos en tu carrito."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Obtener los productos del carrito
         productos = carrito.productos.all()
         mensaje = f"Carrito de compras de {request.user.username}:\n"
         
         total = 0
         for producto in productos:
-            mensaje += f"- {producto.nombre} x {producto.cantidad} = ${producto.total_precio()}\n"
+            mensaje += f"- {producto.nombre} x {producto.cantidad} = ${producto.total_precio():.2f}\n"
             total += producto.total_precio()
 
-        mensaje += f"Total: ${total}\n"
+        mensaje += f"Total: ${total:.2f}\n"
         mensaje += "Confirma tu compra por favor."
 
-        telefono_empresa = "3026929375"
+        # Número de teléfono de la empresa
+        telefono_empresa = "3218775416"
+        
+        # Crear la URL de WhatsApp codificada
         url_whatsapp = f"https://wa.me/{telefono_empresa}?text={quote(mensaje)}"
 
         return JsonResponse({"whatsapp_url": url_whatsapp})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def registrar_compra(request):
+    try:
+        carrito = Carrito.objects.get(usuario=request.user)
+        productos_en_carrito = ProductoEnCarrito.objects.filter(carrito=carrito)
+
+        if not productos_en_carrito.exists():
+            return Response({'message': 'El carrito está vacío'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Aquí podrías registrar la compra en una tabla de pedidos si lo deseas
+
+        # Vaciar el carrito después de la compra
+        productos_en_carrito.delete()
+
+        return Response({'message': 'Compra registrada con éxito'}, status=status.HTTP_201_CREATED)
+
+    except Carrito.DoesNotExist:
+        return Response({'message': 'Carrito no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def vaciar_carrito(request):
+    try:
+        carrito = Carrito.objects.get(usuario=request.user)
+        ProductoEnCarrito.objects.filter(carrito=carrito).delete()
+
+        return Response({'message': 'Carrito vaciado correctamente'}, status=status.HTTP_200_OK)
+
+    except Carrito.DoesNotExist:
+        return Response({'message': 'Carrito no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def historial_compras(request):
+    try:
+        # Obtener las compras del usuario autenticado
+        compras = Compra.objects.filter(usuario=request.user)
+
+        if not compras.exists():
+            return Response({'message': 'No tienes compras registradas'}, status=status.HTTP_404_NOT_FOUND)
+
+        historial = []
+        for compra in compras:
+            historial.append({
+                'id': compra.id,
+                'fecha': compra.fecha,
+                'total': compra.total,
+                'productos': [producto.nombre for producto in compra.productos.all()],
+            })
+
+        return Response(historial, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
