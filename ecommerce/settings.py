@@ -15,6 +15,7 @@ from datetime import timedelta
 import os
 
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,6 +30,8 @@ SECRET_KEY = 'django-insecure-#ru9*6&lii_2_+7of!h74oi9+bp2r-$x)i7!)-3+i#9)dchh)q
 DEBUG = True
 
 # ALLOWED_HOSTS = ["MayraSanchez.pythonanywhere.com"]
+
+ALLOWED_HOSTS = ["*"]
 
 
 
@@ -93,7 +96,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'wm_tienda',
         'USER': 'postgres',
-        'PASSWORD': 'postgres',
+        'PASSWORD': 'postgres123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
