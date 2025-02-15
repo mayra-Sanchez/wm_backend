@@ -76,7 +76,9 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)  # Esto asegura que el superusuario esté activo
         return self.create_user(email, password, **extra_fields)
+
 
 class Usuario(AbstractBaseUser):
     CLIENTE = 'client'
@@ -120,10 +122,10 @@ class Compra(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Calcular el total antes de guardar
         if not self.total:
-            self.total = sum([producto.precio * producto.cantidad for producto in self.productos_lista.all()])
+            self.total = sum([item.precio * item.cantidad for item in self.productos_comprados.all()])
         super().save(*args, **kwargs)
+
 
     def __str__(self):
         return f"Compra {self.id} - {self.total} COP"
