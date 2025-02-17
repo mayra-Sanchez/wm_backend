@@ -27,11 +27,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#ru9*6&lii_2_+7of!h74oi9+bp2r-$x)i7!)-3+i#9)dchh)q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # ALLOWED_HOSTS = ["MayraSanchez.pythonanywhere.com"]
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "wm-siteweb.vercel.app",
+    "157.230.191.4",
+    "localhost",  # Para desarrollo local
+]
 
 
 
@@ -62,11 +66,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",  
-    "https://wm-siteweb.vercel.app",
-]
-
 ROOT_URLCONF = 'ecommerce.urls'
 
 TEMPLATES = [
@@ -94,15 +93,20 @@ WSGI_APPLICATION = 'ecommerce.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'wm_tienda',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres123',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME', 'wm_tienda'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'postgres123'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",  # Frontend en desarrollo
+    "https://wm-siteweb.vercel.app",  # Frontend en producción
+    "http://157.230.191.4",  # Si usas este dominio en HTTP
+    "https://157.230.191.4",  # Si usas este dominio en HTTPS
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
