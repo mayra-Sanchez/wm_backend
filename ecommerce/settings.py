@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
-
+from decouple import  config
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,13 +27,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#ru9*6&lii_2_+7of!h74oi9+bp2r-$x)i7!)-3+i#9)dchh)q'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED_HOSTS = ["MayraSanchez.pythonanywhere.com"]
 
 ALLOWED_HOSTS = [
     "wm-siteweb.vercel.app",
     "157.230.191.4",
+    "143.198.171.53",
     "localhost",  # Para desarrollo local
 ]
 
@@ -106,7 +107,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://wm-siteweb.vercel.app",  # Frontend en producción
     "http://157.230.191.4",  # Si usas este dominio en HTTP
     "https://157.230.191.4",  # Si usas este dominio en HTTPS
+    "http://143.198.171.53",  # Agregamos la IP de tu Droplet en HTTP
+    "https://143.198.171.53",  # Agregamos la IP de tu Droplet en HTTPS
 ]
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
