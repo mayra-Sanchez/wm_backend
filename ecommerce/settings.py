@@ -33,12 +33,9 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = [
     "wm-siteweb.vercel.app",
-    "157.230.191.4",
     "143.198.171.53",
     "localhost",  # Para desarrollo local
 ]
-
-
 
 # Application definition
 
