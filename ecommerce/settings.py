@@ -100,12 +100,12 @@ DATABASES = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",  # Frontend en desarrollo
-    "https://wm-siteweb.vercel.app",  # Frontend en producción
-    "http://157.230.191.4",  # Si usas este dominio en HTTP
-    "https://157.230.191.4",  # Si usas este dominio en HTTPS
-    "http://143.198.171.53",  # Agregamos la IP de tu Droplet en HTTP
-    "https://143.198.171.53",  # Agregamos la IP de tu Droplet en HTTPS
+    "http://localhost:4200",  
+    "https://wm-siteweb.vercel.app",  
+    "https://143.198.171.53",
+    "http://143.198.171.53",
+    "https://localhost",
+    "http://localhost",
 ]
 
 
