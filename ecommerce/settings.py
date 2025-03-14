@@ -32,10 +32,13 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # ALLOWED_HOSTS = ["MayraSanchez.pythonanywhere.com"]
 
 ALLOWED_HOSTS = [
+    "wmsiteweb.xyz",
+    "www.wmsiteweb.xyz",
     "wm-siteweb.vercel.app",
     "143.198.171.53",
-    "localhost",  # Para desarrollo local
+    "localhost",
 ]
+
 
 # Application definition
 
@@ -100,14 +103,17 @@ DATABASES = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:4200",  
-    "https://wm-siteweb.vercel.app",  
-    "https://143.198.171.53",
-    "http://143.198.171.53",
-    "https://localhost",
-    "http://localhost",
+    "http://localhost:4200",
+    "https://wm-siteweb.vercel.app",
+    "https://wmsiteweb.xyz",
+    "https://www.wmsiteweb.xyz",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://wmsiteweb.xyz",
+    "https://www.wmsiteweb.xyz",
+    "https://wm-siteweb.vercel.app",
+]
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
